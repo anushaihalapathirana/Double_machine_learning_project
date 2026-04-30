@@ -204,21 +204,5 @@ def main():
     print("\n--- Best MLflow Runs (sorted by best model PEHE) ---")
     print(best_runs[best_run_columns].to_string(index=False))
     
-    # Print MLflow UI info
-    #print("\nTo view experiment results, run:")
-    #print("  mlflow ui")
-    #print("Then open http://localhost:5000 in your browser")
-
-    #print("\nModel metrics")
-    #print(metrics)
-
-    #print("\nPolicy results")
-    #print(evaluate_positive_policy)
-
-    #print("\nTop 30% constrained policy results")
-    #print(evaluate_fraction_policy)
-    
-    #print("\n threshold policy results")
-    #print(evaluate_threshold_policy)
 
 if __name__ == "__main__":    main()    

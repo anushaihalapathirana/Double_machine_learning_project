@@ -35,9 +35,7 @@ def setup_mlflow(experiment_name=MLFLOW_EXPERIMENT_NAME, tracking_uri=None):
     Returns:
         The experiment object
     """
-    # Use the local SQLite backend by default. The filesystem backend is
-    # deprecated in recent MLflow versions and older mlruns metadata can fail
-    # to load if required fields are missing.
+    # Use the local SQLite backend by default.
     if tracking_uri is None:
         tracking_uri = f"sqlite:///{ROOT_DIR / 'mlflow.db'}"
     
