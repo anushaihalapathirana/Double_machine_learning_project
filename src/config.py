@@ -9,3 +9,5 @@ METRICS_DIR = OUTPUT_DIR / "metrics"
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.3
+
+MLFLOW_EXPERIMENT_NAME = "DML_Causal_Inference_v5"
