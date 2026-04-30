@@ -1,14 +1,14 @@
 import pandas as pd
-from sklearn import metrics
 from sklearn.model_selection import train_test_split
 
-from src.config import DATA_PATH, FIGURE_DIR, METRICS_DIR, RANDOM_STATE, TEST_SIZE
+from src.config import DATA_PATH, FIGURE_DIR, METRICS_DIR, RANDOM_STATE, TEST_SIZE, MLFLOW_EXPERIMENT_NAME
 from src.data import load_data, get_features_and_target
 from src.preprocessing import preprocess_data
 from src.baselines import get_naive_ate, regression_adjustment_ate
 from src.model import get_model, train_model, get_all_models
 from src.policy import get_positive_policy, get_fraction_policy, get_threshold_policy
 from src.evaluation import ate_error, pehe, evaluate_policies
+from src.mlflow_tracking import setup_mlflow, log_full_experiment, compare_best_models
 
 from src.plots import (
     plot_ite_distribution,
@@ -150,16 +150,59 @@ def main():
     evaluate_fraction_policy.to_csv(METRICS_DIR / "fraction_policy_results.csv")
     evaluate_threshold_policy.to_csv(METRICS_DIR / "threshold_policy_results.csv")
 
-    print("\nModel metrics")
-    print(metrics)
-
-    print("\nPolicy results")
-    print(evaluate_positive_policy)
-
-    print("\nTop 30% constrained policy results")
-    print(evaluate_fraction_policy)
+    # ============================================
+    # MLflow Experiment Tracking
+    # ============================================
+    print("\n" + "="*50)
+    print("Logging to MLflow")
+    print("="*50)
     
-    print("\n threshold policy results")
-    print(evaluate_threshold_policy)
+    # Set up MLflow experiment
+    experiment = setup_mlflow(experiment_name=MLFLOW_EXPERIMENT_NAME)
+    
+    # Prepare baseline results
+    baseline_results = {
+        "naive_ate": naive_ate,
+        "ra_ate": ra_ate,
+        "dml_ate": dml_ate
+    }
+    
+    # Model parameters for logging
+    model_params = {
+        "test_size": TEST_SIZE,
+        "random_state": RANDOM_STATE,
+        "n_estimators": 100,
+        "max_depth": 5
+    }
+    
+    # Log full experiment
+    run_id = log_full_experiment(
+        experiment_name=MLFLOW_EXPERIMENT_NAME,
+        comparison_df=comparison_df,
+        policy_results_list=[evaluate_positive_policy, evaluate_fraction_policy, evaluate_threshold_policy],
+        baseline_results=baseline_results,
+        true_ate=true_ate,
+        model_params=model_params,
+        fitted_best_model=best_model,
+        model_input_example=X_test_processed.head(5)
+    )
+    
+    print(f"MLflow Run ID: {run_id}")
+    print("Experiment logged successfully!")
+
+    best_runs = compare_best_models(
+        experiment_name=MLFLOW_EXPERIMENT_NAME,
+        metric="best_model_pehe"
+    )
+    best_run_columns = [
+        "run_id",
+        "metrics.best_model_pehe",
+        "metrics.best_model_ate_error",
+        "params.best_model"
+    ]
+
+    print("\n--- Best MLflow Runs (sorted by best model PEHE) ---")
+    print(best_runs[best_run_columns].to_string(index=False))
+    
 
 if __name__ == "__main__":    main()    

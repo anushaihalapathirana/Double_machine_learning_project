@@ -19,28 +19,28 @@ def get_model(model_type="LinearDML_RF"):
     """
     if model_type == "LinearDML_RF":
         model = LinearDML(
-            model_y=RandomForestRegressor(n_estimators=100, max_depth=5, random_state=RANDOM_STATE),
+            model_y=RandomForestRegressor(n_estimators=200, max_depth=5, random_state=RANDOM_STATE),
             model_t=RandomForestClassifier(n_estimators=100, max_depth=5, random_state=RANDOM_STATE),
             discrete_treatment=True,
             random_state=RANDOM_STATE
         )
     elif model_type == "LinearDML_GB":
         model = LinearDML(
-            model_y=GradientBoostingRegressor(n_estimators=100, max_depth=5, random_state=RANDOM_STATE),
+            model_y=GradientBoostingRegressor(n_estimators=200, max_depth=5, random_state=RANDOM_STATE),
             model_t=GradientBoostingClassifier(n_estimators=100, max_depth=5, random_state=RANDOM_STATE),
             discrete_treatment=True,
             random_state=RANDOM_STATE
         )
     elif model_type == "CausalForestDML":
         model = CausalForestDML(
-            model_y=RandomForestRegressor(n_estimators=100, max_depth=5, random_state=RANDOM_STATE),
-            model_t=RandomForestClassifier(n_estimators=100, max_depth=5, random_state=RANDOM_STATE ),
+            model_y=RandomForestRegressor(n_estimators=200, max_depth=15, random_state=RANDOM_STATE),
+            model_t=RandomForestClassifier(n_estimators=200, max_depth=15, random_state=RANDOM_STATE ),
             discrete_treatment=True,
             random_state=RANDOM_STATE
         )
     elif model_type == "DML_Lasso":
         model = LinearDML(
-            model_y=Lasso(alpha=1.0, random_state=RANDOM_STATE),
+            model_y=Lasso(alpha=0.9, random_state=RANDOM_STATE),
             model_t=LogisticRegression(random_state=RANDOM_STATE, max_iter=1000),
             discrete_treatment=True,
             random_state=RANDOM_STATE
