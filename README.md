@@ -41,7 +41,7 @@ That makes metrics such as PEHE possible. In real production causal inference se
 
 The pipeline first holds out a test set using `TEST_SIZE` from `src/config.py`. The remaining data is split into train and validation using `VALIDATION_SIZE`.
 
-Candidate models are trained on the training split and compared on the validation split. The final selected model is then evaluated once on the held-out test split.
+Candidate models are trained on the training split and compared on the validation split. After model selection, the selected estimator and baseline models are refit on the combined train + validation data, then evaluated once on the held-out test split.
 
 ### 2. Preprocessing
 
@@ -90,6 +90,19 @@ V(policy) = mean(policy * mu1 + (1 - policy) * mu0)
 ## Current Result Snapshot
 
 The latest generated outputs report validation model selection in `outputs/metrics/model_comparison.csv` and final test performance in `outputs/metrics/model_metrics.csv`.
+
+Example final test metrics:
+
+| Metric | Value |
+| --- | ---: |
+| True ATE | 3.9970 |
+| Naive ATE | 4.1183 |
+| Regression ATE | 3.9558 |
+| DML ATE | 3.9237 |
+| Naive ATE Error | 0.1213 |
+| Regression ATE Error | 0.0412 |
+| DML ATE Error | 0.0733 |
+| DML PEHE | 0.6572 |
 
 
 ## Project Structure
@@ -212,4 +225,3 @@ The IHDP benchmark is semi-synthetic, so these assumptions are more controlled t
 - Hyperparameter tuning is intentionally lightweight.
 - Policy value is computed with known potential outcomes; real deployments would require off-policy evaluation or experiment-based validation.
 - MLflow model logging uses Python object serialization for the wrapped EconML estimator, which is convenient for local experimentation but should be hardened for production model serving.
-

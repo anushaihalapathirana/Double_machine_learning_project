@@ -114,19 +114,29 @@ def main():
     print("\n--- Validation Model Comparison (sorted by PEHE) ---")
     print(comparison_df.to_string(index=False))
     
-    # Select the best model on validation, then retrain it on train
+    # Select the best model on validation, then refit it on train + validation.
     best_model_name = comparison_df.iloc[0]["Model"]
     print(f"\nSelected Model: {best_model_name} (lowest validation PEHE)")
+
+    X_final_train = pd.concat([X_train, X_validation])
+    T_final_train = pd.concat([T_train, T_validation])
+    Y_final_train = pd.concat([Y_train, Y_validation])
+
+    X_final_train_processed, X_test_processed, _ = preprocess_data(
+        X_train=X_final_train,
+        X_test=X_test,
+        X_validation=X_validation
+    )
 
     true_ate = true_ite_test.mean()
 
     # Baseline ATE estimates on the final held-out test set.
-    naive_ate = get_naive_ate(Y_train, T_train)
+    naive_ate = get_naive_ate(Y_final_train, T_final_train)
     ra_ate = regression_adjustment_ate(
-        X_train_processed,
+        X_final_train_processed,
         X_test_processed,
-        T_train,
-        Y_train,
+        T_final_train,
+        Y_final_train,
         T_test
     )
 
@@ -137,7 +147,7 @@ def main():
     print(f"Regression Adjustment ATE: {ra_ate:.4f}")
 
     best_model = get_model(best_model_name)
-    best_model = train_model(best_model, X_train_processed, T_train, Y_train)
+    best_model = train_model(best_model, X_final_train_processed, T_final_train, Y_final_train)
     dml_ate = best_model.ate(X_test_processed)
     dml_ite = best_model.effect(X_test_processed) 
     print(
