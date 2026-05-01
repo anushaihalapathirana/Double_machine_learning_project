@@ -188,7 +188,8 @@ MLflow logs:
 - final test DML PEHE
 - baseline ATE estimates and errors
 - policy evaluation metrics
-- model comparison artifact
+- generated figure artifacts under `figures/`
+- generated metric CSV artifacts under `metrics/`
 - fitted selected model as a pyfunc model named `best_model`
 
 ## Reproducibility

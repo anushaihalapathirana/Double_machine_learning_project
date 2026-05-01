@@ -9,6 +9,7 @@ import mlflow
 import mlflow.pyfunc
 from datetime import datetime
 import os
+from pathlib import Path
 import tempfile
 
 from src.config import ROOT_DIR, MLFLOW_EXPERIMENT_NAME
@@ -52,6 +53,20 @@ def _log_dataframe_artifact(df, filename):
         artifact_path = os.path.join(tmpdir, filename)
         df.to_csv(artifact_path, index=False)
         mlflow.log_artifact(artifact_path)
+
+
+def _log_artifacts(artifact_paths):
+    """Log artifact files, grouped by their parent directory name."""
+    if not artifact_paths:
+        return
+
+    for artifact_path in artifact_paths:
+        artifact_path = Path(artifact_path)
+        if artifact_path.exists():
+            mlflow.log_artifact(
+                str(artifact_path),
+                artifact_path=artifact_path.parent.name
+            )
 
 
 def log_model_comparison(run_name, comparison_df, true_ate):
@@ -121,7 +136,8 @@ def log_full_experiment(
     true_ate,
     model_params=None,
     fitted_best_model=None,
-    model_input_example=None
+    model_input_example=None,
+    artifact_paths=None
 ):
     """
     Log a complete experiment with all results.
@@ -135,6 +151,7 @@ def log_full_experiment(
         model_params: Optional dict of model parameters
         fitted_best_model: Optional fitted EconML model to log to MLflow
         model_input_example: Optional example features for the logged model
+        artifact_paths: Optional list of saved plot and metric artifact paths
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_name = f"{experiment_name}_{timestamp}"
@@ -192,6 +209,7 @@ def log_full_experiment(
         
         # Log comparison CSV
         _log_dataframe_artifact(comparison_df, "model_comparison.csv")
+        _log_artifacts(artifact_paths)
         
         return run.info.run_id
 

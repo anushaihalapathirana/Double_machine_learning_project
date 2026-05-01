@@ -29,6 +29,20 @@ def main():
     
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
+    figure_paths = {
+        "ite_distribution": FIGURE_DIR / "ite_distribution.png",
+        "ite_scatter": FIGURE_DIR / "ite_scatter.png",
+        "policy_comparison": FIGURE_DIR / "policy_comparison.png",
+        "model_comparison": FIGURE_DIR / "model_comparison.png",
+    }
+    metric_paths = {
+        "model_metrics": METRICS_DIR / "model_metrics.csv",
+        "model_comparison": METRICS_DIR / "model_comparison.csv",
+        "positive_policy_results": METRICS_DIR / "positive_policy_results.csv",
+        "fraction_policy_results": METRICS_DIR / "fraction_policy_results.csv",
+        "threshold_policy_results": METRICS_DIR / "threshold_policy_results.csv",
+    }
+
     data = load_data(DATA_PATH, header=0)
     X, T, Y, true_ite = get_features_and_target(data)
 
@@ -219,20 +233,20 @@ def main():
         "Treat All": mu1_test.mean(),
         "Treat None": mu0_test.mean()
     }
-    plot_ite_distribution(dml_ite, FIGURE_DIR / "ite_distribution.png")
-    plot_ite_scatter(true_ite_test, dml_ite, FIGURE_DIR / "ite_scatter.png")
-    plot_policy_comparison(policy_values, FIGURE_DIR / "policy_comparison.png")
+    plot_ite_distribution(dml_ite, figure_paths["ite_distribution"])
+    plot_ite_scatter(true_ite_test, dml_ite, figure_paths["ite_scatter"])
+    plot_policy_comparison(policy_values, figure_paths["policy_comparison"])
     plot_model_comparison(
         comparison_df,
-        FIGURE_DIR / "model_comparison.png",
+        figure_paths["model_comparison"],
         true_ate=true_ate_validation
     )
 
-    metrics.to_csv(METRICS_DIR / "model_metrics.csv", index=False)
-    comparison_df.to_csv(METRICS_DIR / "model_comparison.csv", index=False)
-    evaluate_positive_policy.to_csv(METRICS_DIR / "positive_policy_results.csv")
-    evaluate_fraction_policy.to_csv(METRICS_DIR / "fraction_policy_results.csv")
-    evaluate_threshold_policy.to_csv(METRICS_DIR / "threshold_policy_results.csv")
+    metrics.to_csv(metric_paths["model_metrics"], index=False)
+    comparison_df.to_csv(metric_paths["model_comparison"], index=False)
+    evaluate_positive_policy.to_csv(metric_paths["positive_policy_results"])
+    evaluate_fraction_policy.to_csv(metric_paths["fraction_policy_results"])
+    evaluate_threshold_policy.to_csv(metric_paths["threshold_policy_results"])
 
     # ============================================
     # MLflow Experiment Tracking
@@ -270,7 +284,8 @@ def main():
         true_ate=true_ate,
         model_params=model_params,
         fitted_best_model=best_model,
-        model_input_example=X_test_processed.head(5)
+        model_input_example=X_test_processed.head(5),
+        artifact_paths=list(figure_paths.values()) + list(metric_paths.values())
     )
     
     print(f"MLflow Run ID: {run_id}")
