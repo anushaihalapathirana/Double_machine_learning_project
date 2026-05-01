@@ -168,8 +168,8 @@ def log_full_experiment(
         mlflow.log_metric("best_model_pehe", best_model["PEHE"])
         mlflow.log_metric("best_model_validation_ate_error", best_model["ATE Error"])
         mlflow.log_metric("best_model_validation_pehe", best_model["PEHE"])
-        if "Positive Policy Value" in best_model:
-            mlflow.log_metric("best_model_validation_positive_policy_value", best_model["Positive Policy Value"])
+        if "Threshold Policy Value" in best_model:
+            mlflow.log_metric("best_model_validation_threshold_policy_value", best_model["Threshold Policy Value"])
 
         if fitted_best_model is not None:
             mlflow.pyfunc.log_model(
