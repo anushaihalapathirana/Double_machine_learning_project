@@ -44,13 +44,14 @@ def plot_policy_comparison(values_dict, save_path):
     plt.savefig(save_path)
     plt.close()
 
-def plot_model_comparison(comparison_df, save_path):
+def plot_model_comparison(comparison_df, save_path, true_ate=None):
     """
     Plot comparison of multiple DML estimators.
     
     Args:
         comparison_df: DataFrame with columns ['Model', 'Estimated ATE', 'ATE Error', 'PEHE']
         save_path: Path to save the figure
+        true_ate: Optional true ATE reference line for the evaluated split
     """
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     
@@ -78,11 +79,11 @@ def plot_model_comparison(comparison_df, save_path):
         ax2.text(bar.get_x() + bar.get_width()/2., height, f'{height:.3f}', 
                 ha='center', va='bottom', fontsize=8)
     
-    # Plot Estimated ATE vs True ATE
+    # Plot Estimated ATE vs reference ATE
     ax3 = axes[2]
-    true_ate = comparison_df['Estimated ATE'].mean()  # Placeholder - actual true ATE would be passed
     ax3.bar(models, comparison_df['Estimated ATE'].values, color='seagreen', edgecolor='black', alpha=0.7, label='Estimated')
-    ax3.axhline(y=true_ate, color='red', linestyle='--', linewidth=2, label='Mean Estimate')
+    if true_ate is not None:
+        ax3.axhline(y=true_ate, color='red', linestyle='--', linewidth=2, label='True ATE')
     ax3.set_ylabel('Estimated ATE')
     ax3.set_title('Estimated ATE by Model')
     ax3.tick_params(axis='x', rotation=45)
