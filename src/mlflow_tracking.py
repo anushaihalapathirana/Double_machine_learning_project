@@ -151,6 +151,8 @@ def log_full_experiment(
         mlflow.log_metric("naive_ate", baseline_results["naive_ate"])
         mlflow.log_metric("ra_ate", baseline_results["ra_ate"])
         mlflow.log_metric("dml_ate", baseline_results["dml_ate"])
+        if "dml_pehe" in baseline_results:
+            mlflow.log_metric("dml_test_pehe", baseline_results["dml_pehe"])
         
         # Log baseline errors
         mlflow.log_metric("naive_ate_error", abs(baseline_results["naive_ate"] - true_ate))
@@ -160,8 +162,14 @@ def log_full_experiment(
         # Log best model info
         best_model = comparison_df.iloc[0]
         mlflow.log_param("best_model", best_model["Model"])
+        if "Split" in best_model:
+            mlflow.log_param("model_selection_split", best_model["Split"])
         mlflow.log_metric("best_model_ate_error", best_model["ATE Error"])
         mlflow.log_metric("best_model_pehe", best_model["PEHE"])
+        mlflow.log_metric("best_model_validation_ate_error", best_model["ATE Error"])
+        mlflow.log_metric("best_model_validation_pehe", best_model["PEHE"])
+        if "Positive Policy Value" in best_model:
+            mlflow.log_metric("best_model_validation_positive_policy_value", best_model["Positive Policy Value"])
 
         if fitted_best_model is not None:
             mlflow.pyfunc.log_model(

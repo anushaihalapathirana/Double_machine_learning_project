@@ -20,10 +20,11 @@ def policy_value(policy, mu0, mu1):
     outcome = policy * mu1 + (1 - policy) * mu0
     return np.mean(outcome)
 
-def evaluate_policies(policy, T_test, mu0_test, mu1_test):  
+def evaluate_policies(policy, T_test, mu0_test, mu1_test, random_state=None):  
     # Create a random policy for comparison
     # The random policy assigns treatment with a 50% probability, independent of the predicted effects
-    random_policy = np.random.binomial(1, 0.5, size=len(policy))
+    rng = np.random.default_rng(random_state)
+    random_policy = rng.binomial(1, 0.5, size=len(policy))
 
     results = {
         "Observed": policy_value(T_test, mu0_test, mu1_test),
