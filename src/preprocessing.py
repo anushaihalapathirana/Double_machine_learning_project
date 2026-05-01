@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-def preprocess_data(X_train, X_test, X_validation=None):
+def preprocess_data(X_train, X_test, X_validation):
     
     # Separate continuous and binary columns
     continuous_cols = X_train.select_dtypes(include=["float", "float64"]).columns.tolist()

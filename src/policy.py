@@ -1,5 +1,4 @@
 import numpy as np
-from sympy import fraction
 
 def get_positive_policy(ite):
     # Create a policy that assigns treatment if the predicted effect is positive
@@ -12,6 +11,9 @@ def get_fraction_policy(ite, fraction):
     k = int(fraction * len(ite))
 
     policy = np.zeros(len(ite), dtype=int)
+    if k == 0:
+        return policy
+
     top_indices = np.argsort(ite)[-k:]
     policy[top_indices] = 1
 
