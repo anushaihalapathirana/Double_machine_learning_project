@@ -11,7 +11,8 @@ def get_model(model_type="LinearDML_RF"):
         model_type: One of:
             - "LinearDML_RF": LinearDML with Random Forest (default)
             - "LinearDML_GB": LinearDML with Gradient Boosting
-            - "CausalForestDML": Causal Forest DML
+            - "CausalForestDML_RF": Causal Forest DML with Random Forest
+            - "CausalForestDML_GB": Causal Forest DML with Gradient Boosting
             - "DML_Lasso": LinearDML with Lasso for high-dimensional settings
     
     Returns:
@@ -31,10 +32,17 @@ def get_model(model_type="LinearDML_RF"):
             discrete_treatment=True,
             random_state=RANDOM_STATE
         )
-    elif model_type == "CausalForestDML":
+    elif model_type == "CausalForestDML_RF":
         model = CausalForestDML(
-            model_y=RandomForestRegressor(n_estimators=200, max_depth=15, random_state=RANDOM_STATE),
-            model_t=RandomForestClassifier(n_estimators=200, max_depth=15, random_state=RANDOM_STATE ),
+            model_y=RandomForestRegressor(n_estimators=10, max_depth=10, random_state=RANDOM_STATE),
+            model_t=RandomForestClassifier(n_estimators=10, max_depth=5, random_state=RANDOM_STATE ),
+            discrete_treatment=True,
+            random_state=RANDOM_STATE
+        )
+    elif model_type == "CausalForestDML_GB":
+        model = CausalForestDML(
+            model_y=GradientBoostingRegressor(n_estimators=200, max_depth=5, random_state=RANDOM_STATE),
+            model_t=GradientBoostingClassifier(n_estimators=100, max_depth=5, random_state=RANDOM_STATE),
             discrete_treatment=True,
             random_state=RANDOM_STATE
         )
@@ -57,11 +65,11 @@ def get_all_models():
     return {
         "LinearDML_RF": get_model("LinearDML_RF"),
         "LinearDML_GB": get_model("LinearDML_GB"),
-        "CausalForestDML": get_model("CausalForestDML"),
+        "CausalForestDML_RF": get_model("CausalForestDML_RF"),
+        "CausalForestDML_GB": get_model("CausalForestDML_GB"),
         "DML_Lasso": get_model("DML_Lasso")
     }
 
 def train_model(model, X, T, Y):
     model.fit(Y, T, X=X)
     return model
-

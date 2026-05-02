@@ -1,6 +1,6 @@
 # Causal Treatment Policy Learning with Double Machine Learning
 
-This project builds a reproducible causal machine learning pipeline for estimating heterogeneous treatment effects and learning treatment assignment policies. It uses the semi-synthetic IHDP dataset, compares several Double Machine Learning estimators, selects a model on a validation split, evaluates final performance on a held-out test split, and tracks experiments with MLflow.
+This python (v3.10) project builds a reproducible causal machine learning pipeline for estimating heterogeneous treatment effects and learning treatment assignment policies. It uses the semi-synthetic IHDP dataset, compares several Double Machine Learning estimators, selects a model on a validation split, evaluates final performance on a held-out test split, and tracks experiments with MLflow.
 
 ## Highlights
 
@@ -8,8 +8,9 @@ This project builds a reproducible causal machine learning pipeline for estimati
 - Compares multiple EconML estimators:
   - `LinearDML` with random forests
   - `LinearDML` with gradient boosting
-  - `CausalForestDML`
-  - `LinearDML` with Lasso/logistic nuisance models
+  - `CausalForestDML_RF` with random forest nuisance models
+  - `CausalForestDML_GB` with gradient boosting nuisance models
+  - `DML_Lasso` with Lasso/logistic nuisance models
 - Uses a train/validation/test workflow:
   - train split for fitting candidate models
   - validation split for model selection
@@ -75,6 +76,8 @@ The project evaluates three treatment policies based on estimated ITE:
 - **Top fraction policy**: treat the top 30% of individuals by estimated ITE.
 - **Threshold policy**: treat if estimated ITE is above the mean estimated ITE.
 
+It also evaluates a treatment-budget curve for top-fraction policies at 5%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, and 100% treatment rates.
+
 Policy value is computed using the known potential outcomes:
 
 ```text
@@ -90,6 +93,12 @@ V(policy) = mean(policy * mu1 + (1 - policy) * mu0)
 ## Current Result Snapshot
 
 The latest generated outputs report validation model selection in `outputs/metrics/model_comparison.csv` and final test performance in `outputs/metrics/model_metrics.csv`.
+
+Current validation selection:
+
+| Selected Model | Validation PEHE | Validation ATE Error | Threshold Policy Value |
+| --- | ---: | ---: | ---: |
+| CausalForestDML_RF | 0.6288 | 0.0089 | 5.0053 |
 
 Example final test metrics:
 
@@ -177,10 +186,12 @@ The pipeline writes:
 - `outputs/metrics/positive_policy_results.csv`: test policy evaluation for the positive policy.
 - `outputs/metrics/fraction_policy_results.csv`: test policy evaluation for the top-fraction policy.
 - `outputs/metrics/threshold_policy_results.csv`: test policy evaluation for the threshold policy.
+- `outputs/metrics/budget_curve.csv`: policy value at each treatment budget.
 - `outputs/figures/ite_distribution.png`: estimated ITE distribution.
 - `outputs/figures/ite_scatter.png`: true vs estimated ITE.
 - `outputs/figures/model_comparison.png`: validation model comparison.
 - `outputs/figures/policy_comparison.png`: final test policy value comparison.
+- `outputs/figures/budget_curve.png`: policy value versus treatment budget.
 
 MLflow logs:
 

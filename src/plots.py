@@ -44,6 +44,26 @@ def plot_policy_comparison(values_dict, save_path):
     plt.savefig(save_path)
     plt.close()
 
+
+def plot_budget_curve(budget_curve_df, save_path):
+    plt.figure()
+    treatment_percent = budget_curve_df["Treatment Rate"] * 100
+    plt.plot(
+        treatment_percent,
+        budget_curve_df["Policy Value"],
+        marker="o",
+        linewidth=2,
+        color="seagreen"
+    )
+    plt.xlabel("Treatment Budget (%)")
+    plt.ylabel("Policy Value")
+    plt.title("Policy Value by Treatment Budget")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
+
+
 def plot_model_comparison(comparison_df, save_path, true_ate=None):
     """
     Plot comparison of multiple DML estimators.

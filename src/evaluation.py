@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from src.policy import get_fraction_policy
+
 def ate_error(estimated_ate, true_ate):
     # Calculate the absolute error between the estimated ATE and the true ATE
     return abs(estimated_ate - true_ate)
@@ -35,3 +37,29 @@ def evaluate_policies(policy, T_test, mu0_test, mu1_test, random_state=None):
     }
 
     return pd.DataFrame.from_dict(results, orient="index", columns=["Policy Value"])
+
+
+def evaluate_budget_curve(ite, mu0, mu1, treatment_rates):
+    """
+    Evaluate top-fraction policies over a range of treatment budgets.
+
+    Args:
+        ite: Estimated individual treatment effects.
+        mu0: Potential outcomes under control.
+        mu1: Potential outcomes under treatment.
+        treatment_rates: Iterable of treatment fractions between 0 and 1.
+
+    Returns:
+        DataFrame with treatment rate, treated count, and policy value.
+    """
+    results = []
+
+    for treatment_rate in treatment_rates:
+        policy = get_fraction_policy(ite, treatment_rate)
+        results.append({
+            "Treatment Rate": treatment_rate,
+            "Treated Count": int(policy.sum()),
+            "Policy Value": policy_value(policy, mu0, mu1),
+        })
+
+    return pd.DataFrame(results)

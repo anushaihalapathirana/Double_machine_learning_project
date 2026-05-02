@@ -15,18 +15,20 @@ from src.preprocessing import preprocess_data
 from src.baselines import get_naive_ate, regression_adjustment_ate
 from src.model import get_model, train_model, get_all_models
 from src.policy import get_positive_policy, get_fraction_policy, get_threshold_policy
-from src.evaluation import ate_error, pehe, evaluate_policies
+from src.evaluation import ate_error, pehe, evaluate_policies, evaluate_budget_curve
 from src.mlflow_tracking import setup_mlflow, log_full_experiment, compare_best_models
 
 from src.plots import (
     plot_ite_distribution,
     plot_ite_scatter,
+    plot_budget_curve,
     plot_policy_comparison,
     plot_model_comparison
 )
 
 def main():
     
+    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
     figure_paths = {
@@ -34,6 +36,7 @@ def main():
         "ite_scatter": FIGURE_DIR / "ite_scatter.png",
         "policy_comparison": FIGURE_DIR / "policy_comparison.png",
         "model_comparison": FIGURE_DIR / "model_comparison.png",
+        "budget_curve": FIGURE_DIR / "budget_curve.png",
     }
     metric_paths = {
         "model_metrics": METRICS_DIR / "model_metrics.csv",
@@ -41,6 +44,7 @@ def main():
         "positive_policy_results": METRICS_DIR / "positive_policy_results.csv",
         "fraction_policy_results": METRICS_DIR / "fraction_policy_results.csv",
         "threshold_policy_results": METRICS_DIR / "threshold_policy_results.csv",
+        "budget_curve": METRICS_DIR / "budget_curve.csv",
     }
 
     data = load_data(DATA_PATH, header=0)
@@ -199,6 +203,12 @@ def main():
         mu1_test,
         random_state=RANDOM_STATE
     )
+    budget_curve = evaluate_budget_curve(
+        dml_ite,
+        mu0_test,
+        mu1_test,
+        treatment_rates=[0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00],
+    )
     
     metrics = pd.DataFrame({
         "Metric": [
@@ -236,6 +246,7 @@ def main():
     plot_ite_distribution(dml_ite, figure_paths["ite_distribution"])
     plot_ite_scatter(true_ite_test, dml_ite, figure_paths["ite_scatter"])
     plot_policy_comparison(policy_values, figure_paths["policy_comparison"])
+    plot_budget_curve(budget_curve, figure_paths["budget_curve"])
     plot_model_comparison(
         comparison_df,
         figure_paths["model_comparison"],
@@ -247,6 +258,7 @@ def main():
     evaluate_positive_policy.to_csv(metric_paths["positive_policy_results"])
     evaluate_fraction_policy.to_csv(metric_paths["fraction_policy_results"])
     evaluate_threshold_policy.to_csv(metric_paths["threshold_policy_results"])
+    budget_curve.to_csv(metric_paths["budget_curve"], index=False)
 
     # ============================================
     # MLflow Experiment Tracking

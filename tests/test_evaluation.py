@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.evaluation import ate_error, evaluate_policies, pehe, policy_value
+from src.evaluation import ate_error, evaluate_budget_curve, evaluate_policies, pehe, policy_value
 
 
 def test_ate_error_returns_absolute_error():
@@ -39,3 +39,21 @@ def test_evaluate_policies_is_reproducible_with_random_state():
 
     pd.testing.assert_frame_equal(first, second)
     assert list(first.index) == ["Observed", "Random", "DML Policy", "Treat All", "Treat None"]
+
+
+def test_evaluate_budget_curve_uses_top_effects_for_each_budget():
+    ite = np.array([0.1, 3.0, -1.0, 2.0])
+    mu0 = pd.Series([1.0, 1.0, 1.0, 1.0])
+    mu1 = pd.Series([2.0, 10.0, 0.0, 5.0])
+
+    result = evaluate_budget_curve(ite, mu0, mu1, treatment_rates=[0.25, 0.50])
+
+    expected = pd.DataFrame({
+        "Treatment Rate": [0.25, 0.50],
+        "Treated Count": [1, 2],
+        "Policy Value": [
+            (1.0 + 10.0 + 1.0 + 1.0) / 4,
+            (1.0 + 10.0 + 1.0 + 5.0) / 4,
+        ],
+    })
+    pd.testing.assert_frame_equal(result, expected)
