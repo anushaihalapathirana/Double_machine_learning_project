@@ -23,7 +23,8 @@ from src.plots import (
     plot_ite_scatter,
     plot_budget_curve,
     plot_policy_comparison,
-    plot_model_comparison
+    plot_model_comparison,
+    plot_shap_explanations
 )
 
 def main():
@@ -37,6 +38,8 @@ def main():
         "policy_comparison": FIGURE_DIR / "policy_comparison.png",
         "model_comparison": FIGURE_DIR / "model_comparison.png",
         "budget_curve": FIGURE_DIR / "budget_curve.png",
+        "shap_summary": FIGURE_DIR / "shap_summary.png",
+        "shap_importance": FIGURE_DIR / "shap_importance.png",
     }
     metric_paths = {
         "model_metrics": METRICS_DIR / "model_metrics.csv",
@@ -251,6 +254,12 @@ def main():
         comparison_df,
         figure_paths["model_comparison"],
         true_ate=true_ate_validation
+    )
+    plot_shap_explanations(
+        best_model,
+        X_test_processed,
+        figure_paths["shap_summary"],
+        figure_paths["shap_importance"]
     )
 
     metrics.to_csv(metric_paths["model_metrics"], index=False)

@@ -192,6 +192,8 @@ The pipeline writes:
 - `outputs/figures/model_comparison.png`: validation model comparison.
 - `outputs/figures/policy_comparison.png`: final test policy value comparison.
 - `outputs/figures/budget_curve.png`: policy value versus treatment budget.
+- `outputs/figures/shap_summary.png`: SHAP beeswarm explanation of final model ITE/CATE predictions.
+- `outputs/figures/shap_importance.png`: mean absolute SHAP feature importance for final model ITE/CATE predictions.
 
 MLflow logs:
 
@@ -201,6 +203,7 @@ MLflow logs:
 - policy evaluation metrics
 - generated figure artifacts under `figures/`
 - generated metric CSV artifacts under `metrics/`
+- SHAP explanation plot artifacts under `figures/`
 - fitted selected model as a pyfunc model named `best_model`
 
 ## Reproducibility
