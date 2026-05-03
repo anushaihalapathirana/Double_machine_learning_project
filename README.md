@@ -153,10 +153,33 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the full experiment:
+Run the full experiment with default settings:
 
 ```bash
 python main.py
+```
+
+Run with custom experiment settings:
+
+```bash
+python main.py \
+  --experiment-name DML_Causal_Inference_Custom \
+  --test-size 0.25 \
+  --validation-size 0.2 \
+  --treatment-fraction 0.4 \
+  --treatment-rates 0.1,0.2,0.4,0.6,0.8,1.0
+```
+
+Run locally without MLflow logging or SHAP plot generation:
+
+```bash
+python main.py --skip-mlflow --no-shap
+```
+
+Write outputs to a different directory:
+
+```bash
+python main.py --output-dir outputs/custom_run
 ```
 
 Run tests:
