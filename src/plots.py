@@ -1,7 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import shap
 
 def _extract_single_shap_explanation(shap_values):
     """
@@ -39,6 +36,8 @@ def plot_shap_explanations(model, X, summary_path, importance_path, max_display=
         importance_path: Path for the mean absolute SHAP bar plot.
         max_display: Maximum number of features shown in each plot.
     """
+    # Import SHAP lazily so regular plot/test imports stay lightweight and tests can monkeypatch it.
+    import shap
 
     shap_values = model.shap_values(X)
     explanation = _extract_single_shap_explanation(shap_values)
