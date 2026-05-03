@@ -4,5 +4,6 @@ scikit-learn==1.5.1
 matplotlib==3.9.1
 seaborn==0.13.2
 econml==0.16.0
+shap==0.48.0
 mlflow==3.11.1
 pytest==9.0.2

@@ -1,6 +1,68 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import shap
+
+def _extract_single_shap_explanation(shap_values):
+    """
+    Extract the SHAP explanation object from EconML's nested shap_values output.
+    """
+    values = getattr(shap_values, "values", None)
+    if not isinstance(shap_values, dict) and values is not None and not callable(values):
+        return shap_values
+
+    if isinstance(shap_values, dict):
+        for key in sorted(shap_values):
+            try:
+                return _extract_single_shap_explanation(shap_values[key])
+            except ValueError:
+                continue
+
+    if isinstance(shap_values, (list, tuple)):
+        for item in shap_values:
+            try:
+                return _extract_single_shap_explanation(item)
+            except ValueError:
+                continue
+
+    raise ValueError("Could not find a SHAP explanation in model.shap_values output.")
+
+
+def plot_shap_explanations(model, X, summary_path, importance_path, max_display=15):
+    """
+    Save SHAP explanation plots for a fitted EconML treatment effect model.
+
+    Args:
+        model: Fitted EconML estimator with a shap_values method.
+        X: Feature matrix used to explain CATE/ITE predictions.
+        summary_path: Path for the SHAP beeswarm summary plot.
+        importance_path: Path for the mean absolute SHAP bar plot.
+        max_display: Maximum number of features shown in each plot.
+    """
+
+    shap_values = model.shap_values(X)
+    explanation = _extract_single_shap_explanation(shap_values)
+
+    plt.figure()
+    shap.summary_plot(explanation, X, show=False, max_display=max_display)
+    plt.title("SHAP Summary for Estimated Treatment Effects")
+    plt.tight_layout()
+    plt.savefig(summary_path, bbox_inches="tight")
+    plt.close()
+
+    plt.figure()
+    shap.summary_plot(
+        explanation,
+        X,
+        plot_type="bar",
+        show=False,
+        max_display=max_display
+    )
+    plt.title("SHAP Feature Importance for Estimated Treatment Effects")
+    plt.tight_layout()
+    plt.savefig(importance_path, bbox_inches="tight")
+    plt.close()
+
 
 def plot_ite_distribution(ite, save_path):
     plt.figure()
