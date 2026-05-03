@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+import argparse
+from dataclasses import dataclass, field
+from pathlib import Path
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -7,6 +9,7 @@ from src.config import (
     DATA_PATH,
     FIGURE_DIR,
     METRICS_DIR,
+    OUTPUT_DIR,
     RANDOM_STATE,
     TEST_SIZE,
     VALIDATION_SIZE,
@@ -15,22 +18,25 @@ from src.config import (
 from src.data import load_data, get_features_and_target
 from src.preprocessing import preprocess_data
 from src.baselines import get_naive_ate, regression_adjustment_ate
-from src.model import get_model, train_model, get_all_models
 from src.policy import get_positive_policy, get_fraction_policy, get_threshold_policy
 from src.evaluation import ate_error, pehe, evaluate_policies, evaluate_budget_curve
-from src.mlflow_tracking import setup_mlflow, log_full_experiment, compare_best_models
-
-from src.plots import (
-    plot_ite_distribution,
-    plot_ite_scatter,
-    plot_budget_curve,
-    plot_policy_comparison,
-    plot_model_comparison,
-    plot_shap_explanations
-)
-
 
 TREATMENT_RATES = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
+
+
+@dataclass
+class ExperimentConfig:
+    data_path: Path = DATA_PATH
+    figure_dir: Path = FIGURE_DIR
+    metrics_dir: Path = METRICS_DIR
+    random_state: int = RANDOM_STATE
+    test_size: float = TEST_SIZE
+    validation_size: float = VALIDATION_SIZE
+    experiment_name: str = MLFLOW_EXPERIMENT_NAME
+    treatment_fraction: float = 0.3
+    treatment_rates: list = field(default_factory=lambda: TREATMENT_RATES.copy())
+    log_mlflow: bool = True
+    make_shap_plots: bool = True
 
 
 @dataclass
@@ -83,33 +89,33 @@ class FinalEvaluationResult:
     dml_ite: object
 
 
-def build_output_paths():
-    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
-    METRICS_DIR.mkdir(parents=True, exist_ok=True)
+def build_output_paths(config):
+    config.figure_dir.mkdir(parents=True, exist_ok=True)
+    config.metrics_dir.mkdir(parents=True, exist_ok=True)
 
     return ExperimentPaths(
         figure_paths={
-            "ite_distribution": FIGURE_DIR / "ite_distribution.png",
-            "ite_scatter": FIGURE_DIR / "ite_scatter.png",
-            "policy_comparison": FIGURE_DIR / "policy_comparison.png",
-            "model_comparison": FIGURE_DIR / "model_comparison.png",
-            "budget_curve": FIGURE_DIR / "budget_curve.png",
-            "shap_summary": FIGURE_DIR / "shap_summary.png",
-            "shap_importance": FIGURE_DIR / "shap_importance.png",
+            "ite_distribution": config.figure_dir / "ite_distribution.png",
+            "ite_scatter": config.figure_dir / "ite_scatter.png",
+            "policy_comparison": config.figure_dir / "policy_comparison.png",
+            "model_comparison": config.figure_dir / "model_comparison.png",
+            "budget_curve": config.figure_dir / "budget_curve.png",
+            "shap_summary": config.figure_dir / "shap_summary.png",
+            "shap_importance": config.figure_dir / "shap_importance.png",
         },
         metric_paths={
-            "model_metrics": METRICS_DIR / "model_metrics.csv",
-            "model_comparison": METRICS_DIR / "model_comparison.csv",
-            "positive_policy_results": METRICS_DIR / "positive_policy_results.csv",
-            "fraction_policy_results": METRICS_DIR / "fraction_policy_results.csv",
-            "threshold_policy_results": METRICS_DIR / "threshold_policy_results.csv",
-            "budget_curve": METRICS_DIR / "budget_curve.csv",
+            "model_metrics": config.metrics_dir / "model_metrics.csv",
+            "model_comparison": config.metrics_dir / "model_comparison.csv",
+            "positive_policy_results": config.metrics_dir / "positive_policy_results.csv",
+            "fraction_policy_results": config.metrics_dir / "fraction_policy_results.csv",
+            "threshold_policy_results": config.metrics_dir / "threshold_policy_results.csv",
+            "budget_curve": config.metrics_dir / "budget_curve.csv",
         }
     )
 
 
-def load_and_split_data():
-    data = load_data(DATA_PATH, header=0)
+def load_and_split_data(config):
+    data = load_data(config.data_path, header=0)
     X, T, Y, true_ite = get_features_and_target(data)
 
     X_train_val, X_test, T_train_val, T_test, Y_train_val, Y_test, true_ite_train_val, true_ite_test = train_test_split(
@@ -117,8 +123,8 @@ def load_and_split_data():
         T,
         Y,
         true_ite,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
+        test_size=config.test_size,
+        random_state=config.random_state,
         stratify=T
     )
 
@@ -127,8 +133,8 @@ def load_and_split_data():
         T_train_val,
         Y_train_val,
         true_ite_train_val,
-        test_size=VALIDATION_SIZE,
-        random_state=RANDOM_STATE,
+        test_size=config.validation_size,
+        random_state=config.random_state,
         stratify=T_train_val
     )
 
@@ -159,6 +165,8 @@ def load_and_split_data():
 
 
 def run_model_selection(splits):
+    from src.model import get_all_models, train_model
+
     print("\n" + "=" * 50)
     print("Validation Model Selection")
     print("=" * 50)
@@ -241,7 +249,9 @@ def build_metrics_table(true_ate, naive_ate, ra_ate, dml_ate, dml_ite, true_ite_
     })
 
 
-def run_final_evaluation(splits, selection):
+def run_final_evaluation(splits, selection, config):
+    from src.model import get_model, train_model
+
     X_final_train = pd.concat([splits.X_train, splits.X_validation])
     T_final_train = pd.concat([splits.T_train, splits.T_validation])
     Y_final_train = pd.concat([splits.Y_train, splits.Y_validation])
@@ -281,7 +291,7 @@ def run_final_evaluation(splits, selection):
     )
 
     positive_policy = get_positive_policy(dml_ite)
-    fraction_policy = get_fraction_policy(dml_ite, fraction=0.3)
+    fraction_policy = get_fraction_policy(dml_ite, fraction=config.treatment_fraction)
     threshold_policy = get_threshold_policy(dml_ite, threshold=dml_ite.mean())
 
     mu0_test = splits.data.loc[splits.X_test.index, "mu0"]
@@ -292,33 +302,36 @@ def run_final_evaluation(splits, selection):
         splits.T_test,
         mu0_test,
         mu1_test,
-        random_state=RANDOM_STATE
+        random_state=config.random_state
     )
     fraction_policy_results = evaluate_policies(
         fraction_policy,
         splits.T_test,
         mu0_test,
         mu1_test,
-        random_state=RANDOM_STATE
+        random_state=config.random_state
     )
     threshold_policy_results = evaluate_policies(
         threshold_policy,
         splits.T_test,
         mu0_test,
         mu1_test,
-        random_state=RANDOM_STATE
+        random_state=config.random_state
     )
     budget_curve = evaluate_budget_curve(
         dml_ite,
         mu0_test,
         mu1_test,
-        treatment_rates=TREATMENT_RATES,
+        treatment_rates=config.treatment_rates,
     )
 
     policy_values = {
         "Observed": (splits.T_test * mu1_test + (1 - splits.T_test) * mu0_test).mean(),
         "Positive policy": (positive_policy * mu1_test + (1 - positive_policy) * mu0_test).mean(),
-        "Top 30% policy": (fraction_policy * mu1_test + (1 - fraction_policy) * mu0_test).mean(),
+        f"Top {config.treatment_fraction:.0%} policy": (
+            fraction_policy * mu1_test
+            + (1 - fraction_policy) * mu0_test
+        ).mean(),
         "Threshold policy": (threshold_policy * mu1_test + (1 - threshold_policy) * mu0_test).mean(),
         "Treat All": mu1_test.mean(),
         "Treat None": mu0_test.mean()
@@ -348,7 +361,16 @@ def run_final_evaluation(splits, selection):
     )
 
 
-def save_outputs(paths, splits, selection, results):
+def save_outputs(paths, splits, selection, results, config):
+    from src.plots import (
+        plot_ite_distribution,
+        plot_ite_scatter,
+        plot_budget_curve,
+        plot_policy_comparison,
+        plot_model_comparison,
+        plot_shap_explanations
+    )
+
     figure_paths = paths.figure_paths
     metric_paths = paths.metric_paths
 
@@ -361,12 +383,13 @@ def save_outputs(paths, splits, selection, results):
         figure_paths["model_comparison"],
         true_ate=selection.true_ate_validation
     )
-    plot_shap_explanations(
-        results.best_model,
-        results.X_test_processed,
-        figure_paths["shap_summary"],
-        figure_paths["shap_importance"]
-    )
+    if config.make_shap_plots:
+        plot_shap_explanations(
+            results.best_model,
+            results.X_test_processed,
+            figure_paths["shap_summary"],
+            figure_paths["shap_importance"]
+        )
 
     results.metrics.to_csv(metric_paths["model_metrics"], index=False)
     selection.comparison_df.to_csv(metric_paths["model_comparison"], index=False)
@@ -376,23 +399,33 @@ def save_outputs(paths, splits, selection, results):
     results.budget_curve.to_csv(metric_paths["budget_curve"], index=False)
 
 
-def log_experiment(paths, results):
+def log_experiment(paths, results, config):
+    from src.mlflow_tracking import setup_mlflow, log_full_experiment
+
     print("\n" + "=" * 50)
     print("Logging to MLflow")
     print("=" * 50)
 
-    setup_mlflow(experiment_name=MLFLOW_EXPERIMENT_NAME)
+    setup_mlflow(experiment_name=config.experiment_name)
 
     model_params = {
-        "test_size": TEST_SIZE,
-        "validation_size": VALIDATION_SIZE,
-        "random_state": RANDOM_STATE,
+        "test_size": config.test_size,
+        "validation_size": config.validation_size,
+        "random_state": config.random_state,
+        "treatment_fraction": config.treatment_fraction,
         "n_estimators": 100,
         "max_depth": 5
     }
 
+    artifact_paths = list(paths.figure_paths.values()) + list(paths.metric_paths.values())
+    if not config.make_shap_plots:
+        artifact_paths = [
+            path for path in artifact_paths
+            if path.name not in {"shap_summary.png", "shap_importance.png"}
+        ]
+
     run_id = log_full_experiment(
-        experiment_name=MLFLOW_EXPERIMENT_NAME,
+        experiment_name=config.experiment_name,
         comparison_df=results.comparison_df,
         policy_results_list=[
             results.positive_policy_results,
@@ -404,7 +437,7 @@ def log_experiment(paths, results):
         model_params=model_params,
         fitted_best_model=results.best_model,
         model_input_example=results.X_test_processed.head(5),
-        artifact_paths=list(paths.figure_paths.values()) + list(paths.metric_paths.values())
+        artifact_paths=artifact_paths
     )
 
     print(f"MLflow Run ID: {run_id}")
@@ -412,9 +445,11 @@ def log_experiment(paths, results):
     return run_id
 
 
-def print_best_mlflow_runs():
+def print_best_mlflow_runs(config):
+    from src.mlflow_tracking import compare_best_models
+
     best_runs = compare_best_models(
-        experiment_name=MLFLOW_EXPERIMENT_NAME,
+        experiment_name=config.experiment_name,
         metric="best_model_validation_pehe"
     )
     best_run_columns = [
@@ -430,20 +465,81 @@ def print_best_mlflow_runs():
     print(best_runs[best_run_columns].to_string(index=False))
 
 
-def run_experiment():
-    paths = build_output_paths()
-    splits = load_and_split_data()
+def run_experiment(config=None):
+    config = config or ExperimentConfig()
+    paths = build_output_paths(config)
+    splits = load_and_split_data(config)
     selection = run_model_selection(splits)
-    results = run_final_evaluation(splits, selection)
-    save_outputs(paths, splits, selection, results)
-    log_experiment(paths, results)
-    print_best_mlflow_runs()
+    results = run_final_evaluation(splits, selection, config)
+    save_outputs(paths, splits, selection, results, config)
+
+    if config.log_mlflow:
+        log_experiment(paths, results, config)
+        print_best_mlflow_runs(config)
 
     return results
 
 
+def _fraction(value):
+    value = float(value)
+    if not 0 < value < 1:
+        raise argparse.ArgumentTypeError("Value must be between 0 and 1.")
+    return value
+
+
+def _rate(value):
+    value = float(value)
+    if not 0 < value <= 1:
+        raise argparse.ArgumentTypeError("Value must be greater than 0 and no more than 1.")
+    return value
+
+
+def _treatment_rates(value):
+    rates = [_rate(item.strip()) for item in value.split(",")]
+    return rates
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Run the DML causal inference experiment."
+    )
+    parser.add_argument("--data-path", type=Path, default=DATA_PATH)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    parser.add_argument("--experiment-name", default=MLFLOW_EXPERIMENT_NAME)
+    parser.add_argument("--test-size", type=_fraction, default=TEST_SIZE)
+    parser.add_argument("--validation-size", type=_fraction, default=VALIDATION_SIZE)
+    parser.add_argument("--random-state", type=int, default=RANDOM_STATE)
+    parser.add_argument("--treatment-fraction", type=_fraction, default=0.3)
+    parser.add_argument(
+        "--treatment-rates",
+        type=_treatment_rates,
+        default=TREATMENT_RATES,
+        help="Comma-separated treatment budget rates, for example: 0.05,0.1,0.2,0.3"
+    )
+    parser.add_argument("--skip-mlflow", action="store_true")
+    parser.add_argument("--no-shap", action="store_true")
+
+    return parser.parse_args(argv)
+
+
+def config_from_args(args):
+    return ExperimentConfig(
+        data_path=args.data_path,
+        figure_dir=args.output_dir / "figures",
+        metrics_dir=args.output_dir / "metrics",
+        random_state=args.random_state,
+        test_size=args.test_size,
+        validation_size=args.validation_size,
+        experiment_name=args.experiment_name,
+        treatment_fraction=args.treatment_fraction,
+        treatment_rates=args.treatment_rates,
+        log_mlflow=not args.skip_mlflow,
+        make_shap_plots=not args.no_shap
+    )
+
+
 def main():
-    run_experiment()
+    run_experiment(config_from_args(parse_args()))
 
 
 if __name__ == "__main__":
