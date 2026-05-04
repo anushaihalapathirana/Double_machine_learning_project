@@ -20,7 +20,7 @@ from src.data import get_features_and_target, load_data
 from src.data_validation import validate_ihdp_schema, validate_treatment_split
 from src.evaluation import ate_error, evaluate_budget_curve, evaluate_policies, pehe
 from src.policy import get_fraction_policy, get_positive_policy, get_threshold_policy
-from src.preprocessing import preprocess_data
+from src.preprocessing import fit_preprocessor
 
 TREATMENT_RATES = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
 
@@ -64,6 +64,7 @@ class DataSplits:
     X_train_processed: pd.DataFrame
     X_validation_processed: pd.DataFrame
     X_test_processed: pd.DataFrame
+    preprocessor: object
 
 
 @dataclass
@@ -76,6 +77,7 @@ class ModelSelectionResult:
 @dataclass
 class FinalEvaluationResult:
     best_model: object
+    preprocessor: object
     X_final_train_processed: pd.DataFrame
     X_test_processed: pd.DataFrame
     comparison_df: pd.DataFrame
@@ -144,11 +146,10 @@ def load_and_split_data(config):
     validate_treatment_split(T_validation, "Validation")
     validate_treatment_split(T_test, "Test")
 
-    X_train_processed, X_test_processed, X_validation_processed = preprocess_data(
-        X_train=X_train,
-        X_test=X_test,
-        X_validation=X_validation,
-    )
+    preprocessor = fit_preprocessor(X_train)
+    X_train_processed = preprocessor.transform(X_train)
+    X_test_processed = preprocessor.transform(X_test)
+    X_validation_processed = preprocessor.transform(X_validation)
 
     return DataSplits(
         data=data,
@@ -167,6 +168,7 @@ def load_and_split_data(config):
         X_train_processed=X_train_processed,
         X_validation_processed=X_validation_processed,
         X_test_processed=X_test_processed,
+        preprocessor=preprocessor,
     )
 
 
@@ -262,11 +264,9 @@ def run_final_evaluation(splits, selection, config):
     T_final_train = pd.concat([splits.T_train, splits.T_validation])
     Y_final_train = pd.concat([splits.Y_train, splits.Y_validation])
 
-    X_final_train_processed, X_test_processed, _ = preprocess_data(
-        X_train=X_final_train,
-        X_test=splits.X_test,
-        X_validation=splits.X_validation,
-    )
+    preprocessor = fit_preprocessor(X_final_train)
+    X_final_train_processed = preprocessor.transform(X_final_train)
+    X_test_processed = preprocessor.transform(splits.X_test)
 
     true_ate = splits.true_ite_test.mean()
     naive_ate = get_naive_ate(Y_final_train, T_final_train)
@@ -352,6 +352,7 @@ def run_final_evaluation(splits, selection, config):
 
     return FinalEvaluationResult(
         best_model=best_model,
+        preprocessor=preprocessor,
         X_final_train_processed=X_final_train_processed,
         X_test_processed=X_test_processed,
         comparison_df=selection.comparison_df,

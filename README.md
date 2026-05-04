@@ -62,7 +62,15 @@ Candidate models are trained on the training split and compared on the validatio
 
 ### 2. Preprocessing
 
-`src/preprocessing.py` standardizes continuous features using statistics learned from the training split and preserves binary features. The same learned scaling is applied to validation and test data.
+`src/preprocessing.py` fits a reusable feature preprocessor on the training split. Binary `0/1` or `False/True` features are preserved, while all other numeric features are standardized using training-set statistics. The fitted preprocessor is then reused to transform validation, test, and future inference data.
+
+```python
+from src.preprocessing import fit_preprocessor
+
+preprocessor = fit_preprocessor(X_train)
+X_train_processed = preprocessor.transform(X_train)
+X_test_processed = preprocessor.transform(X_test)
+```
 
 ### 3. Baseline Estimators
 
@@ -102,7 +110,7 @@ V(policy) = mean(policy * mu1 + (1 - policy) * mu0)
 
 ### 6. Inference and Policy Scoring
 
-`src/inference.py` defines the lightweight scoring interface used after a causal effect model has been trained:
+`src/inference.py` defines the lightweight scoring interface used after a causal effect model and preprocessor have been trained:
 
 ```python
 from src.inference import predict_ite, assign_policy, score_treatment_policy
