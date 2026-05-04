@@ -17,6 +17,7 @@ from src.config import (
     VALIDATION_SIZE,
 )
 from src.data import get_features_and_target, load_data
+from src.data_validation import validate_ihdp_schema, validate_treatment_split
 from src.evaluation import ate_error, evaluate_budget_curve, evaluate_policies, pehe
 from src.policy import get_fraction_policy, get_positive_policy, get_threshold_policy
 from src.preprocessing import preprocess_data
@@ -116,6 +117,7 @@ def build_output_paths(config):
 
 def load_and_split_data(config):
     data = load_data(config.data_path, header=0)
+    validate_ihdp_schema(data, benchmark_mode=True)
     X, T, Y, true_ite = get_features_and_target(data)
 
     X_train_val, X_test, T_train_val, T_test, Y_train_val, Y_test, true_ite_train_val, true_ite_test = train_test_split(
@@ -137,6 +139,10 @@ def load_and_split_data(config):
         random_state=config.random_state,
         stratify=T_train_val,
     )
+
+    validate_treatment_split(T_train, "Train")
+    validate_treatment_split(T_validation, "Validation")
+    validate_treatment_split(T_test, "Test")
 
     X_train_processed, X_test_processed, X_validation_processed = preprocess_data(
         X_train=X_train,
