@@ -17,6 +17,7 @@ This python (v3.10) project builds a reproducible causal machine learning pipeli
   - test split for final reporting
 - Evaluates learned treatment policies against observed, random, treat-all, and treat-none baselines.
 - Logs metrics, artifacts, and the selected fitted model to MLflow.
+- Provides an inference helper for scoring new rows and assigning treatment policies from estimated ITE.
 - Includes unit tests for policy logic, metrics, preprocessing, and baseline estimators.
 
 ## Dataset
@@ -35,6 +36,21 @@ ITE = mu1 - mu0
 ```
 
 That makes metrics such as PEHE possible. In real production causal inference settings, true individual treatment effects are usually not directly observable.
+
+## Benchmark vs Production Evaluation
+
+This repository runs in **benchmark mode** because IHDP is semi-synthetic and includes `mu0` and `mu1`. In benchmark mode, the pipeline can compute true ITE, PEHE, true ATE error, and oracle policy value. These metrics are useful for comparing causal estimators under controlled conditions, but they rely on information that is usually unavailable in real deployments.
+
+In a **production mode** causal ML workflow, model selection would not use true ITE or PEHE. Instead, selection and monitoring would rely on observable-data diagnostics and policy evaluation methods, such as:
+
+- validation policy value estimated with inverse propensity weighting or doubly robust estimators
+- nuisance model quality checks for outcome and treatment models
+- propensity overlap and common-support diagnostics
+- policy stability across folds, time periods, or population segments
+- treatment budget, cost, and business constraints
+
+The current implementation therefore treats PEHE-based model selection as a benchmark-only evaluation choice, not as a production selection strategy.
+
 
 ## Methodology
 
@@ -63,10 +79,10 @@ Candidate DML estimators are defined in `src/model.py`. Each model is trained on
 
 - validation ATE
 - validation ATE error
-- validation PEHE
-- validation policy value
+- validation PEHE, available only in benchmark mode because IHDP has true ITE
+- validation policy value, computed with known potential outcomes in benchmark mode
 
-The selected model is the one with the lowest validation PEHE, with policy value retained as an additional decision-relevant metric.
+The selected model is the one with the lowest validation PEHE. This is appropriate for the semi-synthetic IHDP benchmark, but a production setting would replace this selection rule with observable policy-value estimates and diagnostics that do not require true treatment effects.
 
 ### 5. Treatment Policies
 
@@ -84,11 +100,31 @@ Policy value is computed using the known potential outcomes:
 V(policy) = mean(policy * mu1 + (1 - policy) * mu0)
 ```
 
+### 6. Inference and Policy Scoring
+
+`src/inference.py` defines the lightweight scoring interface used after a causal effect model has been trained:
+
+```python
+from src.inference import predict_ite, assign_policy, score_treatment_policy
+
+ite = predict_ite(fitted_model, fitted_preprocessor, new_features)
+policy = assign_policy(ite, policy_type="top_fraction", fraction=0.3)
+ite, policy = score_treatment_policy(
+    fitted_model,
+    fitted_preprocessor,
+    new_features,
+    policy_type="top_fraction",
+    fraction=0.3,
+)
+```
+
+Pass `preprocessor=None` when `new_features` is already in the processed feature space expected by the model.
+
 ## Metrics
 
 - **ATE Error**: absolute difference between estimated ATE and true ATE.
-- **PEHE**: root mean squared error between estimated ITE and true ITE.
-- **Policy Value**: expected outcome under a treatment assignment policy.
+- **PEHE**: root mean squared error between estimated ITE and true ITE. This is a benchmark-only metric.
+- **Policy Value**: expected outcome under a treatment assignment policy. In this benchmark, it is computed with known potential outcomes; in production it would need to be estimated from observed data.
 
 ## Current Result Snapshot
 
@@ -130,6 +166,7 @@ DML/
 │   ├── preprocessing.py            # Train-based scaling for train/test/validation
 │   ├── baselines.py                # Naive and regression-adjustment ATE baselines
 │   ├── model.py                    # EconML DML model definitions
+│   ├── inference.py                # ITE scoring and treatment policy assignment helpers
 │   ├── policy.py                   # Treatment policy rules
 │   ├── evaluation.py               # ATE error, PEHE, and policy value metrics
 │   ├── plots.py                    # Plot generation
