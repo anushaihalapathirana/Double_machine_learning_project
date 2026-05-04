@@ -142,7 +142,7 @@ Current validation selection:
 
 | Selected Model | Validation PEHE | Validation ATE Error | Threshold Policy Value |
 | --- | ---: | ---: | ---: |
-| CausalForestDML_RF | 0.6288 | 0.0089 | 5.0053 |
+| CausalForestDML_RF | 0.6680 | 0.1138 | 5.0963 |
 
 Example final test metrics:
 
@@ -151,11 +151,11 @@ Example final test metrics:
 | True ATE | 3.9970 |
 | Naive ATE | 4.1183 |
 | Regression ATE | 3.9558 |
-| DML ATE | 3.9237 |
+| DML ATE | 3.9670 |
 | Naive ATE Error | 0.1213 |
 | Regression ATE Error | 0.0412 |
-| DML ATE Error | 0.0733 |
-| DML PEHE | 0.6572 |
+| DML ATE Error | 0.0300 |
+| DML PEHE | 0.7466 |
 
 
 ## Project Structure
