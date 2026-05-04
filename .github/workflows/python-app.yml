@@ -37,3 +37,15 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests
+    - name: Run CLI smoke experiment
+      run: |
+        python main.py --skip-mlflow --no-shap --output-dir outputs/ci_smoke
+    - name: Upload experiment outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: ci-experiment-outputs
+        path: outputs/ci_smoke
+    - name: Build package
+      run: |
+          python -m pip install build
+          python -m build
