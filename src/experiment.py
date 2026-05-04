@@ -408,6 +408,7 @@ def save_outputs(paths, splits, selection, results, config):
 
 def log_experiment(paths, results, config):
     from src.mlflow_tracking import log_full_experiment, setup_mlflow
+    from src.model import get_model_metadata
 
     print("\n" + "=" * 50)
     print("Logging to MLflow")
@@ -420,9 +421,8 @@ def log_experiment(paths, results, config):
         "validation_size": config.validation_size,
         "random_state": config.random_state,
         "treatment_fraction": config.treatment_fraction,
-        "n_estimators": 100,
-        "max_depth": 5,
     }
+    model_params.update(get_model_metadata(results.comparison_df.iloc[0]["Model"]))
 
     artifact_paths = list(paths.figure_paths.values()) + list(paths.metric_paths.values())
     if not config.make_shap_plots:
