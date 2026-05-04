@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dml-causal-policy-learning"
+version = "0.1.0"
+description = "Causal treatment policy learning with Double Machine Learning, policy evaluation, SHAP explanations, and MLflow tracking."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas==2.2.2",
+    "numpy==1.26.4",
+    "scikit-learn==1.5.1",
+    "matplotlib==3.9.1",
+    "seaborn==0.13.2",
+    "econml==0.16.0",
+    "shap==0.48.0",
+    "mlflow==3.11.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.2",
+    "flake8",
+]
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

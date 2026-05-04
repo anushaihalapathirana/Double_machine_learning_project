@@ -119,6 +119,7 @@ Example final test metrics:
 ```text
 DML/
 ├── main.py                         # End-to-end experiment pipeline
+├── pyproject.toml                  # Project metadata, dependencies, and test configuration
 ├── requirements.txt                # Python dependencies
 ├── README.md                       # Project documentation
 ├── data/
@@ -145,7 +146,13 @@ DML/
 
 ## Installation
 
-Create and activate a virtual environment, then install dependencies:
+Create and activate a virtual environment, then install the project with development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+The pinned runtime dependencies are also kept in `requirements.txt` for simple environment setup:
 
 ```bash
 pip install -r requirements.txt
